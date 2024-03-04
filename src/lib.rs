@@ -98,72 +98,11 @@ impl LoggerUi {
             drop(logs.drain(..dropped_entries));
         });
 
-        ui.horizontal(|ui| {
-            if ui.button("Clear").clicked() {
-                try_mut_log(|logs| logs.clear());
-            }
-            ui.menu_button("Log Levels", |ui| {
-                for level in LEVELS {
-                    if ui
-                        .selectable_label(self.loglevels[level as usize - 1], level.as_str())
-                        .clicked()
-                    {
-                        self.loglevels[level as usize - 1] = !self.loglevels[level as usize - 1];
-                    }
-                }
-            });
-        });
-
-        ui.horizontal(|ui| {
-            ui.label("Search: ");
-            let response = ui.text_edit_singleline(&mut self.search_term);
-
-            let mut config_changed = false;
-
-            if ui
-                .selectable_label(self.search_case_sensitive, "Aa")
-                .on_hover_text("Case sensitive")
-                .clicked()
-            {
-                self.search_case_sensitive = !self.search_case_sensitive;
-                config_changed = true;
-            }
-
-            if ui
-                .selectable_label(self.search_use_regex, ".*")
-                .on_hover_text("Use regex")
-                .clicked()
-            {
-                self.search_use_regex = !self.search_use_regex;
-                config_changed = true;
-            }
-
-            if self.search_use_regex && (response.changed() || config_changed) {
-                self.regex = RegexBuilder::new(&self.search_term)
-                    .case_insensitive(!self.search_case_sensitive)
-                    .build()
-                    .ok()
-            }
-        });
-
-        ui.horizontal(|ui| {
-            ui.label("Max Log output");
-            ui.add(egui::widgets::DragValue::new(&mut self.max_log_length).speed(1));
-        });
-
-        ui.horizontal(|ui| {
-            if ui.button("Sort").clicked() {
-                try_mut_log(|logs| logs.sort());
-            }
-        });
-
-        ui.separator();
-
         let mut logs_displayed: usize = 0;
 
         egui::ScrollArea::vertical()
             .auto_shrink([false, true])
-            .max_height(ui.available_height() - 30.0)
+            .max_height(ui.available_height() - 64.0)
             .stick_to_bottom(true)
             .show(ui, |ui| {
                 try_get_log(|logs| {
@@ -188,26 +127,37 @@ impl LoggerUi {
             });
 
         ui.horizontal(|ui| {
-            ui.label(format!(
-                "Log size: {}",
-                try_get_log(|logs| logs.len()).unwrap_or_default()
-            ));
-            ui.label(format!("Displayed: {}", logs_displayed));
             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                if ui.button("Copy").clicked() {
-                    ui.output_mut(|o| {
-                        try_get_log(|logs| {
-                            let mut out_string = String::new();
-                            logs.iter()
-                                .take(self.max_log_length)
-                                .for_each(|(_, string)| {
-                                    out_string.push_str(string);
-                                    out_string.push_str(" \n");
-                                });
-                            o.copied_text = out_string;
-                        });
+                ui.horizontal(|ui| {
+                    ui.menu_button("Log Levels", |ui| {
+                        for level in LEVELS {
+                            if ui
+                                .selectable_label(
+                                    self.loglevels[level as usize - 1],
+                                    level.as_str(),
+                                )
+                                .clicked()
+                            {
+                                self.loglevels[level as usize - 1] =
+                                    !self.loglevels[level as usize - 1];
+                            }
+                        }
                     });
-                }
+                    if ui.button("Copy").clicked() {
+                        ui.output_mut(|o| {
+                            try_get_log(|logs| {
+                                let mut out_string = String::new();
+                                logs.iter()
+                                    .take(self.max_log_length)
+                                    .for_each(|(_, string)| {
+                                        out_string.push_str(string);
+                                        out_string.push_str(" \n");
+                                    });
+                                o.copied_text = out_string;
+                            });
+                        });
+                    }
+                });
             });
         });
     }
