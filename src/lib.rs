@@ -238,3 +238,8 @@ pub fn logger_ui(ui: &mut egui::Ui) {
         ui.colored_label(Color32::RED, "Something went wrong loading the log");
     }
 }
+
+/// Clears the log
+pub fn clear_log() {
+    try_mut_log(|logs| logs.clear());
+}
